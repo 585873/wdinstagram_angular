@@ -19,16 +19,15 @@ let data = [
 
 "use strict";
 
-(function(){
-  angular.module("wdinstagram", [])
-})();
 
 
 angular
   .module("wdinstagramApp", [ "ui.router", "ngResource"])
   .config(["$stateProvider", RouterFunction])
-
-
+  .factory("InstagramFactory", ["$resource", InstagramFactoryFunction])
+  .controller("InstagramNewController", ["InstagramFactory", "$state", InstagramNewControllerFunction])
+  .controller("InstagramShowController", ["InstagramFactory", "$stateParams", InstagramShowControllerFunction])
+  .controller("InstagramEditController", ["InstagramFactory", "$stateParams", "$state", InstagramEditControllerFunction])
 
   function RouterFunction($stateProvider){
   $stateProvider
@@ -38,12 +37,54 @@ angular
     controller: "InstagramIndexController",
     controllerAs: "vm"
   })
-  .state("InstagramShow", {
-    url: "/entries/:id",
-    templateUrl: "js/ng-views/show.html",
+  .state("instagramNew", {
+    url: "/instagrams/new",
+    templateUrl: "js/ng-views/new.html",
+    controller: "InstagramNewController",
+    controller: "vm"
   })
-
-
-  function InstagramIndexControllerFunction(EntryFactory){
-  this.instagrams = InstagramFactory.query()
+  .state("instagramShow", {
+    url: "/instagrams/:id",
+    templateUrl: "js/ng-views/show.html",
+    controller: "InstagramShowController",
+    controllerAs: "vm"
+  })
+  .state("instagramEdit", {
+    url: "instagrams/edit",
+    templateUrl: "js/ng-views/edit.html",
+    controller: "InstagramEditController",
+    controller: "vm"
+  })
 }
+
+  function InstagramFactoryFunction($resource) {
+    return $resource("http://localhost:3000/instagrams/:id")
+  }
+
+  function InstagramIndexControllerFunction(InstagramFactory){
+  this.instagrams = InstagramFactory.query()
+  }
+
+  function InstagramNewControllerFunction(InstagramFactory, $state) {
+  this.instagram = new InstagramFactory();
+  this.create = function() {
+    this.instagram.$save(function(instagram) {
+      $state.go("instagramShow", {id: instagram.id})
+    })
+   }
+  }
+
+  function InstagramShowControllerFunction(InstagramFactory, $stateParams) {
+  this.instagram = InstagramFactory.get({id: $stateParams.id})
+  }
+
+  function InstagramEditControllerFunction(InstagramFactory, $stateParams, $state) {
+  this.instagram = InstagramFactory.get({id: $stateParams.id})
+  this.update = function() {
+    this.instagram.$update({id: $stateParams.id})
+  }
+  this.destroy = function() {
+      this.instagram.$delete({id: $stateParams.id});
+
+    }
+  }
